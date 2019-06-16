@@ -37,11 +37,31 @@ def main():
 
     # Comunicacao com o Client
     ############################
-    
+
+    UDPServerSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    UDPServerSocket.bind(('localhost', 2001))
+
+    while(True):
+        bytesAddressPair = UDPServerSocket.recvfrom(1024)
+        domainName = bytesAddressPair[0].decode('ascii')
+        address = bytesAddressPair[1]
+        print('Recebi do Client: ' + domainName)
+        if not domainName:
+            break
+        if (domainName in map):
+            msg = map.get(domainName)
+            #connection_socket.send(ipAddress.encode('ascii'))
+        else:
+            msg = 'Nao existe esse dominio'
+            #connection_socket.send(msg.encode('ascii'))
+        UDPServerSocket.sendto(ipAddress.encode('ascii'), address)
+
+
+    """
     dnsClientSocket = Socket(socket.AF_INET, socket.SOCK_STREAM)
     dnsClientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     
-    dnsClientSocket.bind(('', 2080))
+    dnsClientSocket.bind(('', 2001))
     dnsClientSocket.listen(1)
     connection_socket = dnsClientSocket.accept()[0]
 
@@ -63,7 +83,7 @@ def main():
 
 
     #connection_socket.close()
-
+    """
     ############################
     
 if __name__ == "__main__":

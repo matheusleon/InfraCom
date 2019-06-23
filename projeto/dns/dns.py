@@ -23,10 +23,11 @@ def main():
     connection_socket = dnsSocket.accept()[0]
 
     print('Aceitou conexão com o SERVER')
-    #msg = connection_socket.recv(1024).decode('ascii')
-    #domainName, ipAddress = msg.split("#")
-    domainName = connection_socket.recv(1024).decode('ascii')
-    ipAddress = connection_socket.recv(1024).decode('ascii')
+    msg = connection_socket.recv(1024).decode('ascii')
+    domainName, ipAddress = msg.split("#")
+    #domainName = connection_socket.recv(1024).decode('ascii')
+    #print(domainName)
+    #ipAddress = connection_socket.recv(1024).decode('ascii')
     print('Recebi do SERVER o dominio: ' + domainName)
     print('Recebi do SERVER o IP: ' + ipAddress)
 
@@ -42,12 +43,14 @@ def main():
 
     UDPServerSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     UDPServerSocket.bind(('localhost', 2001))
+    
+    
 
     while(True):
         bytesAddressPair = UDPServerSocket.recvfrom(1024)
         domainName = bytesAddressPair[0].decode('ascii')
         address = bytesAddressPair[1]
-        print('Recebi do Client: ' + domainName)
+        print('Recebi do Client: ' + domainName + ' ' + str(address))
         if not domainName:
             break
         if (domainName in map):
@@ -56,7 +59,7 @@ def main():
         else:
             msg = 'Nao existe esse dominio'
             #connection_socket.send(msg.encode('ascii'))
-        UDPServerSocket.sendto(ipAddress.encode('ascii'), address)
+        UDPServerSocket.sendto(msg.encode('ascii'), address)
 
 
     """

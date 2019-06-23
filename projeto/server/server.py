@@ -27,7 +27,8 @@ def main():
     #msg = "oi.com" + '#' + "123.456"
     msg = domainName + '#' + ipAddress
     print('Enviando pro DNS: ' + msg)
-    serverSocket.send(msg.encode('ascii'))
+    serverSocket.send(domainName.encode('ascii'))
+    serverSocket.send(ipAddress.encode('ascii'))
     answer = serverSocket.recv(1024).decode('ascii')
 
     print('Recebi do DNS: ' + answer)
@@ -36,48 +37,49 @@ def main():
     ############################
 
     
-    
-    serverClientSocket = Socket(socket.AF_INET, socket.SOCK_STREAM)
-    serverClientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    
-    serverClientSocket.bind(('', 2080))
-    serverClientSocket.listen(1)
-    connection_socket = serverClientSocket.accept()[0]
-    print('------------Conectou com o CLIENT')
+    while (True):
+      serverClientSocket = Socket(socket.AF_INET, socket.SOCK_STREAM)
+      serverClientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+      
+      serverClientSocket.bind(('', 2080))
+      serverClientSocket.listen(1)
+      connection_socket, ot = serverClientSocket.accept()
+      print('------------Conectou com o CLIENT ' + str(ot))
 
-    while True:
-        option = connection_socket.recv(1024).decode('ascii')
-        print('OPCAO E:' + option)
-        if not option:
-            break
-        if (option == "GET"):
-            filename = connection_socket.recv(1024).decode('ascii')
-            print('NOME DO ARQUIVO ' + filename)
-            exist = os.path.exists(filename)
-            if (exist):
-                connection_socket.send('YES#'.encode('ascii'))
-                f = open(filename, 'r')
-                msg = f.read().encode('ascii')
-                f.close()
-                connection_socket.send(msg)
-            else:
-                connection_socket.send('NO#'.encode('ascii'))
-            
-        elif (option == "LIST"):
-            files = [f for f in glob.glob("*.txt")]
-            ans = ""
-            for f in files:
-                ans = ans + f + "#"
-            print(ans)
-            if (len (files)):
-                ans = ans[:-1]
-            print(ans)
-            connection_socket.send(ans.encode('ascii'))
-        elif (option == "CLOSE"):
-            print('Fechando conexao com Client')
-        else:
-            print('INVALIDO')
-            # INVALIDO        
+      while True:
+          option = connection_socket.recv(1024).decode('ascii')
+          print('OPCAO E:' + option)
+          if not option:
+              break
+          if (option == "GET"):
+              filename = connection_socket.recv(1024).decode('ascii')
+              print('NOME DO ARQUIVO ' + filename)
+              exist = os.path.exists(filename)
+              if (exist):
+                  connection_socket.send('YES#'.encode('ascii'))
+                  f = open(filename, 'r')
+                  msg = f.read().encode('ascii')
+                  f.close()
+                  connection_socket.send(msg)
+              else:
+                  connection_socket.send('NO#'.encode('ascii'))
+              
+          elif (option == "LIST"):
+              files = [f for f in glob.glob("*.txt")]
+              ans = ""
+              for f in files:
+                  ans = ans + f + "#"
+              print(ans)
+              if (len (files)):
+                  ans = ans[:-1]
+              print(ans)
+              connection_socket.send(ans.encode('ascii'))
+          elif (option == "CLOSE"):
+              print('Fechando conexao com Client')
+              break
+          else:
+              print('INVALIDO')
+              # INVALIDO        
 
     return 0
 

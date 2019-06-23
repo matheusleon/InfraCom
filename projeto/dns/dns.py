@@ -23,8 +23,10 @@ def main():
     connection_socket = dnsSocket.accept()[0]
 
     print('Aceitou conexão com o SERVER')
-    msg = connection_socket.recv(1024).decode('ascii')
-    domainName, ipAddress = msg.split("#")
+    #msg = connection_socket.recv(1024).decode('ascii')
+    #domainName, ipAddress = msg.split("#")
+    domainName = connection_socket.recv(1024).decode('ascii')
+    ipAddress = connection_socket.recv(1024).decode('ascii')
     print('Recebi do SERVER o dominio: ' + domainName)
     print('Recebi do SERVER o IP: ' + ipAddress)
 

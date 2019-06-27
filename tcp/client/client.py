@@ -52,8 +52,8 @@ def main():
         filename = input()
         clientSocket.send(filename.encode('ascii'))
         exist = clientSocket.recv(1).decode('ascii')
-
-        if (exist == b"1"):
+        print('Enviando requisicao ao servidor:')
+        if (exist == "1"):
           myfile = open(filename, 'wb')
           
           data = clientSocket.recv(int(1e8))

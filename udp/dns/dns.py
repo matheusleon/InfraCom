@@ -7,90 +7,107 @@ from socket import socket as Socket
 
 map = {}
 
+limit = int(1500)
+
+def transform_int(value):
+  pot = int(2**31)
+  cur = b''
+  while (pot > 0):
+    if (value >= pot):
+      value -= pot
+      cur = cur + b'1'
+    else:
+      cur = cur + b'0'
+    pot = pot // 2
+  return cur
+
+def send(Socket, adress, act_ack, msg):
+  packs = []
+  while (len(msg) > 0):
+    preff_size = min(limit - 33, len(msg))
+    cur_ack = act_ack + len(packs)
+    cur_ack = transform_int(cur_ack)
+    packs.append(cur_ack + msg[0 : preff_size])
+    msg = msg[preff_size:]
+    if (len(msg) == 0):
+      packs[-1] = b'1' + packs[-1]
+    else:
+      packs[-1] = b'0' + packs[-1]
+    
+  for packet in packs:
+    while (True):
+      try:
+        Socket.sendto(packet, adress)
+        serverAnswer, lixo = Socket.recvfrom(1)
+        if (serverAnswer == b'1'):
+          act_ack += 1
+          break
+      except socket.timeout as e:
+        continue
+        
+  return act_ack
+
+def recv(Socket, expected_ack):
+  confirma = b'1'
+  ans = b''
+  adress = ('', -1)
+  while (True):
+    try:
+      answer = Socket.recvfrom(limit)
+      adress = answer[1]
+      body = answer[0]
+      flag_fim = body[0:1]
+      this_ack = body[1:33]
+      real_msg = body[33:]
+      this_ack = int(this_ack, 2)
+
+      if (this_ack != expected_ack):
+        Socket.sendto(confirma, adress)
+        continue
+      else:
+        Socket.sendto(confirma, adress)
+        expected_ack += 1
+        ans += real_msg
+        if (flag_fim == b'1'):
+          break
+        else:
+          continue
+    except socket.timeout as e:
+      continue
+  return ans, adress, expected_ack
+
 def main():
     
-    dnsSocket = Socket(socket.AF_INET, socket.SOCK_STREAM)
-    dnsSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    UDPDNSSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    UDPDNSSocket.bind(('localhost', 2010))
+    act_ack = 0
+    expected_ack = 0
 
     # Comunicacao com o server
     ############################
-
-    dnsSocket.bind(('', 2010))
-    dnsSocket.listen(1)
-
-    print('------------Conectou com o SERVER')
-
-    connection_socket = dnsSocket.accept()[0]
-
-    print('Aceitou conexão com o SERVER')
-    msg = connection_socket.recv(1024).decode('ascii')
-    domainName, ipAddress = msg.split("#")
-    #domainName = connection_socket.recv(1024).decode('ascii')
-    #print(domainName)
-    #ipAddress = connection_socket.recv(1024).decode('ascii')
+    msg, serverAddress, expected_ack = recv(UDPDNSSocket, expected_ack)
+    domainName, ipAddress = msg.decode('ascii').split(" ")
     print('Recebi do SERVER o dominio: ' + domainName)
     print('Recebi do SERVER o IP: ' + ipAddress)
-
     map[domainName] = ipAddress
-
-    connection_socket.send('Mensagem do DNS para o SERVER'.encode('ascii'))
-
     ############################
-
 
     # Comunicacao com o Client
-    ############################
-
-    UDPServerSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    UDPServerSocket.bind(('localhost', 2001))
-    
-    
-
+    ##########################
     while(True):
-        bytesAddressPair = UDPServerSocket.recvfrom(1024)
-        domainName = bytesAddressPair[0].decode('ascii')
-        address = bytesAddressPair[1]
+        act_ack = 0
+        expected_ack = 0
+        domainName, address, expected_ack = recv(UDPDNSSocket, expected_ack)
+        domainName = domainName.decode('ascii')
         print('Recebi do Client: ' + domainName + ' ' + str(address))
         if not domainName:
             break
         if (domainName in map):
             msg = map.get(domainName)
-            #connection_socket.send(ipAddress.encode('ascii'))
         else:
             msg = 'Nao existe esse dominio'
-            #connection_socket.send(msg.encode('ascii'))
-        UDPServerSocket.sendto(msg.encode('ascii'), address)
-
-
-    """
-    dnsClientSocket = Socket(socket.AF_INET, socket.SOCK_STREAM)
-    dnsClientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    
-    dnsClientSocket.bind(('', 2001))
-    dnsClientSocket.listen(1)
-    connection_socket = dnsClientSocket.accept()[0]
-
-    print('------------Conectou com o CLIENT')
-
-    while True:
-        domainName = connection_socket.recv(1024).decode('ascii')
-        print('Recebi do CLIENT o dominio ' + domainName)
-        if not domainName:
-            break
-        if (domainName in map):
-            msg = map.get(domainName)
-            print('Enviando para CLIENT o IP: ' + ipAddress)
-            connection_socket.send(ipAddress.encode('ascii'))
-        else:
-            msg = 'Nao existe esse dominio'
-            print(msg)
-            connection_socket.send(msg.encode('ascii'))
-
-
-    #connection_socket.close()
-    """
+        act_ack = send(UDPDNSSocket, address, act_ack, msg.encode('ascii'))
     ############################
     
 if __name__ == "__main__":
     sys.exit(main())
-

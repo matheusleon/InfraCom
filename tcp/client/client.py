@@ -53,7 +53,7 @@ def main():
         clientSocket.send(filename.encode('ascii'))
         exist = clientSocket.recv(1).decode('ascii')
 
-        if (exist):
+        if (exist == b"1"):
           myfile = open(filename, 'wb')
           
           data = clientSocket.recv(int(1e8))

@@ -8,7 +8,7 @@ serverName = "localhost"
 serverPort = 2080
 
 dnsName = "localhost"
-dnsPort = 2001
+dnsPort = 2010
 
 def print_menu():
   print('Os comandos disponiveis sao:')

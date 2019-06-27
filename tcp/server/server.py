@@ -12,23 +12,17 @@ dnsPort = 2010
 def main():
   
   # Comunicacao com o DNS
-  serverSocket = Socket(socket.AF_INET, socket.SOCK_STREAM)
-  serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-  serverSocket.connect((dnsName,dnsPort))
-  
-  print('------------Conectou com o DNS')
-
-  print('Digite o dominio:')
-  domainName = input()
-  print('Digite o endereco de IP:')
-  ipAddress = input()
-
-  msg = domainName + '#' + ipAddress
-  serverSocket.send(msg.encode('ascii'))
-
-  serverSocket.close()
-  
+  ######################
+  UDPServerSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+  UDPServerSocket.bind(('localhost', 2080))
+  dnsAddress = (dnsName, dnsPort)
+  domainName = input('Digite o dominio: ')
+  ipAddress = input('Digite o endereco de IP: ')
+  msg = domainName + ' ' + ipAddress
+  print('Enviando pro DNS: ' + msg)
+  UDPServerSocket.sendto(msg.encode('ascii'), dnsAddress)
+  UDPServerSocket.close()
+  ######################
 
   # Comunicacao com o Client
   serverClientSocket = Socket(socket.AF_INET, socket.SOCK_STREAM)

@@ -21,7 +21,7 @@ def transform_int(value):
     pot = pot // 2
   return cur
 
-def send(Socket, adress, act_ack, msg):
+def send(Socket, address, act_ack, msg):
   packs = []
   while (len(msg) > 0):
     preff_size = min(limit - 33, len(msg))
@@ -37,7 +37,7 @@ def send(Socket, adress, act_ack, msg):
   for packet in packs:
     while (True):
       try:
-        Socket.sendto(packet, adress)
+        Socket.sendto(packet, address)
         serverAnswer, lixo = Socket.recvfrom(1)
         if (serverAnswer == b'1'):
           act_ack += 1
@@ -50,11 +50,11 @@ def send(Socket, adress, act_ack, msg):
 def recv(Socket, expected_ack):
   confirma = b'1'
   ans = b''
-  adress = ('', -1)
+  address = ('', -1)
   while (True):
     try:
       answer = Socket.recvfrom(limit)
-      adress = answer[1]
+      address = answer[1]
       body = answer[0]
       flag_fim = body[0:1]
       this_ack = body[1:33]
@@ -62,10 +62,10 @@ def recv(Socket, expected_ack):
       this_ack = int(this_ack, 2)
 
       if (this_ack != expected_ack):
-        Socket.sendto(confirma, adress)
+        Socket.sendto(confirma, address)
         continue
       else:
-        Socket.sendto(confirma, adress)
+        Socket.sendto(confirma, address)
         expected_ack += 1
         ans += real_msg
         if (flag_fim == b'1'):
@@ -74,7 +74,7 @@ def recv(Socket, expected_ack):
           continue
     except socket.timeout as e:
       continue
-  return ans, adress, expected_ack
+  return ans, address, expected_ack
 
 def main():
     

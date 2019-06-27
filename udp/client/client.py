@@ -25,7 +25,7 @@ def transform_int(value):
 
 # Socket que esta recebendo o pacote
 # 
-def send(Socket, adress, act_ack, msg):
+def send(Socket, address, act_ack, msg):
   packs = []
   while (len(msg) > 0):
     preff_size = min(limit - 33, len(msg))
@@ -41,7 +41,7 @@ def send(Socket, adress, act_ack, msg):
   for packet in packs:
     while (True):
       try:
-        Socket.sendto(packet, adress)
+        Socket.sendto(packet, address)
         serverAnswer, lixo = Socket.recvfrom(1)
         if (serverAnswer == b'1'):
           act_ack += 1
@@ -54,20 +54,22 @@ def send(Socket, adress, act_ack, msg):
 def recv(Socket, expected_ack):
   confirma = b'1'
   ans = b''
+  address = ('', -1)
   while (True):
     try:
       answer = Socket.recvfrom(limit)
-      adress = answer[1]
+      address = answer[1]
       body = answer[0]
       flag_fim = body[0:1]
       this_ack = body[1:33]
       real_msg = body[33:]
       this_ack = int(this_ack, 2)
+
       if (this_ack != expected_ack):
-        Socket.sendto(confirma, adress)
+        Socket.sendto(confirma, address)
         continue
       else:
-        Socket.sendto(confirma, adress)
+        Socket.sendto(confirma, address)
         expected_ack += 1
         ans += real_msg
         if (flag_fim == b'1'):
@@ -76,7 +78,7 @@ def recv(Socket, expected_ack):
           continue
     except socket.timeout as e:
       continue
-  return ans, expected_ack
+  return ans, address, expected_ack
 
 def main():
     dnsName = "localhost"
@@ -93,12 +95,12 @@ def main():
         UDPClientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         UDPClientSocket.bind(('', 3000))
         act_ack = send(UDPClientSocket, (dnsName, dnsPort), act_ack, domainName.encode('ascii'))
-        msgFromServer, expected_ack = recv(UDPClientSocket, expected_ack)
+        msgFromServer, dnsAddress, expected_ack = recv(UDPClientSocket, expected_ack)
         ipAddress = msgFromServer.decode('ascii')
         if (ipAddress == 'Nao existe esse dominio'):
           print('Nao existe esse dominio, tente novamente.')
           continue
-        serverAdress = (ipAddress, 2080)
+        serverAddress = (ipAddress, 2080)
         break
       ############################
       
@@ -107,23 +109,23 @@ def main():
       while (True):
           print('Informe a opcao:')
           option = input()
-          act_ack = send(UDPClientSocket, serverAdress, act_ack, option.encode('ascii'))
+          act_ack = send(UDPClientSocket, serverAddress, act_ack, option.encode('ascii'))
           if (option == "GET"):
               print('Digite o nome do arquivo:')
               filename = input()
-              act_ack = send(UDPClientSocket, serverAdress, act_ack, filename.encode('ascii'))
-              msg, expected_ack = recv(UDPClientSocket, expected_ack)
+              act_ack = send(UDPClientSocket, serverAddress, act_ack, filename.encode('ascii'))
+              msg, serverAddress, expected_ack = recv(UDPClientSocket, expected_ack)
               msg = msg.decode('ascii')
               exist = msg
               if (exist == "YES"):
                   print('Arquivo recebido com sucesso!')
-                  text, expected_ack = recv(UDPClientSocket, expected_ack)
+                  text, serverAddress, expected_ack = recv(UDPClientSocket, expected_ack)
                   with open(filename, 'wb') as newFile:
                       newFile.write(text)
               else:
                   print('Arquivo nao existe')
           elif (option == "LIST"):
-              msg, expected_ack = recv(UDPClientSocket, expected_ack)
+              msg, serverAddress, expected_ack = recv(UDPClientSocket, expected_ack)
               files = msg.decode('ascii').split("#")
               print(files)
           elif (option == "CLOSE"):
